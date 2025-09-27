@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  facilitator:
+    container_name: x402-facilitator
+    image: ukstv/x402-facilitator:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - ./.env
+    environment:
+      - HOST=0.0.0.0
+      - RUST_LOG=${RUST_LOG:-debug}
+      - SIGNER_TYPE=${SIGNER_TYPE:-private-key}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
