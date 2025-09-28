@@ -37,13 +37,11 @@ async fn main() {
         .init();
 
     let host = env::var("WS_SELLER_HOST")
-        .or_else(|_| env::var("HOST"))
         .unwrap_or_else(|_| "0.0.0.0".into());
     let port: u16 = env::var("WS_SELLER_PORT")
         .ok()
         .and_then(|s| s.parse().ok())
-        .or_else(|| env::var("PORT").ok().and_then(|s| s.parse().ok()))
-        .unwrap_or(4000);
+        .unwrap_or(8081);
 
     let facilitator_ws = env::var("FACILITATOR_WS_URL")
         .unwrap_or_else(|_| "ws://localhost:8080/ws".into());
