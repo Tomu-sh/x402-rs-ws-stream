@@ -20,6 +20,7 @@ tokio-tungstenite = { version = "0.26.2", features = ["native-tls"] }
 tungstenite = { version = "0.26.2" }
 rand = "0.8.5"
 alloy = { version = "1.0.7" }
+chrono = { version = "0.4.38", default-features = false, features = ["clock", "std", "serde"] }
 
 x402-rs = { path = "../../" }
 x402-reqwest = { path = "../../crates/x402-reqwest" }
