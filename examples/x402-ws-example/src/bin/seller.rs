@@ -36,8 +36,14 @@ async fn main() {
         .with_env_filter(EnvFilter::from_default_env())
         .init();
 
-    let host = env::var("HOST").unwrap_or_else(|_| "0.0.0.0".into());
-    let port: u16 = env::var("PORT").ok().and_then(|s| s.parse().ok()).unwrap_or(4000);
+    let host = env::var("WS_SELLER_HOST")
+        .or_else(|_| env::var("HOST"))
+        .unwrap_or_else(|_| "0.0.0.0".into());
+    let port: u16 = env::var("WS_SELLER_PORT")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .or_else(|| env::var("PORT").ok().and_then(|s| s.parse().ok()))
+        .unwrap_or(4000);
 
     let facilitator_ws = env::var("FACILITATOR_WS_URL")
         .unwrap_or_else(|_| "ws://localhost:8080/ws".into());
@@ -69,8 +75,16 @@ async fn main() {
         .route("/ws", get(ws_handler))
         .layer(Extension(config));
 
-    let addr: SocketAddr = format!("{}:{}", host, port).parse().unwrap();
-    tracing::info!(%addr, "WS Seller listening");
+    let ip: std::net::IpAddr = match host.parse() {
+        Ok(ip) => ip,
+        Err(_) => match host.as_str() {
+            "*" => std::net::IpAddr::from([0, 0, 0, 0]),
+            "localhost" => std::net::IpAddr::from([127, 0, 0, 1]),
+            _ => std::net::IpAddr::from([0, 0, 0, 0]),
+        },
+    };
+    let addr = SocketAddr::from((ip, port));
+    tracing::info!(%addr, host=%host, "WS Seller listening");
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
