@@ -16,6 +16,7 @@ This repository provides:
 - [`x402-reqwest`](./crates/x402-reqwest) - Wrapper for reqwest for transparent x402 payments,
 - [`x402-axum-example`](./examples/x402-axum-example) - an example of `x402-axum` usage.
 - [`x402-reqwest-example`](./examples/x402-reqwest-example) - an example of `x402-reqwest` usage.
+ - [`x402-ws-example`](./examples/x402-ws-example) - a Buyer/Seller demo of the WS streaming draft.
 
 ## About x402
 
@@ -90,6 +91,85 @@ See [`x402-reqwest` crate docs](./crates/x402-reqwest/README.md).
 | Micropayment Support                | Enable fine-grained offchain usage-based payments, including streaming and per-request billing.          | 🔜 Planned |
 
 The initial focus is on establishing a stable, production-quality Rust SDK and middleware ecosystem for x402 integration.
+
+## WebSocket Streaming (Draft)
+
+This repository ships an experimental WebSocket profile for streaming payments inspired by the proposal in `x402-ws-stream.md`. It enables time-sliced prepay over a WS control channel while content is streamed on the same or sibling WS.
+
+Status: Draft. EVM-only. Breaking changes possible.
+
+What is implemented:
+
+- Facilitator WS endpoint at `GET /ws` mirroring core HTTP methods:
+  - `x402.supported` → lists supported kinds
+  - `x402.verify` → verify `VerifyRequest`
+  - `x402.settle` → settle `SettleRequest`
+- Example Seller WS server that:
+  - Accepts `stream.init` and responds with `stream.accept` containing `pricePerUnit`, `unitSeconds`, `payTo`, `asset`, `network`, `streamId`
+  - Issues `stream.require` per slice with `PaymentRequirements`
+  - On `stream.pay`, calls the Facilitator over WS (`x402.verify` then optional `x402.settle`) and replies with `stream.accept { verify, settle?, prepaidUntilMs }`
+- Example Buyer that:
+  - Sends `stream.init`
+  - On `stream.require`, builds `PaymentPayload` via `x402-reqwest` signer and sends `stream.pay`
+
+Spec reference: see [`x402-ws-stream.md`](./x402-ws-stream.md).
+
+### Running the WS Demo
+
+Prerequisites:
+
+- Rust toolchain
+- A Facilitator running with WS enabled (the provided binary exposes `GET /ws` by default)
+- EVM private key with test funds if you enable on-chain settlement
+
+1) Start the Facilitator (HTTP + WS):
+
+```bash
+docker run --env-file .env -p 8080:8080 ukstv/x402-facilitator
+```
+
+Ensure your `.env` provides the necessary `RPC_URL_*` and signer variables (see Facilitator section). The WS endpoint will be at `ws://localhost:8080/ws` unless configured otherwise.
+
+2) Run the Seller WS example (streams and requests prepayments):
+
+Environment variables:
+
+- `HOST` (default `0.0.0.0`)
+- `PORT` (default `4000`)
+- `FACILITATOR_WS_URL` (default `ws://localhost:8080/ws`)
+- `STREAM_NETWORK` (default `base-sepolia`)
+- `STREAM_UNIT_SECONDS` (default `60`)
+- `STREAM_PRICE_USDC` (default `0.05`)
+- `STREAM_PAY_TO` (receiver address)
+
+Run:
+
+```bash
+cargo run -p x402-ws-example --bin seller
+```
+
+This exposes a WS endpoint for buyers at `ws://localhost:4000/ws`.
+
+3) Run the Buyer WS example (pays per-slice):
+
+Environment variables:
+
+- `SELLER_WS_URL` (default `ws://localhost:4000/ws`)
+- `EVM_PRIVATE_KEY` (hex string for signing EIP-3009 payloads)
+
+Run:
+
+```bash
+cargo run -p x402-ws-example --bin buyer
+```
+
+On receiving `stream.require`, the buyer signs an EIP‑3009 payload using `x402-reqwest` utilities and responds with `stream.pay`.
+
+Notes:
+
+- The demo operates in the “on-chain per slice” mode by default when `verifyOnly=false`. Tune `STREAM_UNIT_SECONDS` to balance latency and on-chain frequency.
+- Only the WS control-plane is demonstrated here. Streaming the actual content can reuse the same WS connection or a sibling one.
+- The envelope format used is `{ id, method, params }` and `{ id, result }` with `result.method = "stream.accept"` in Seller responses.
 
 ## Facilitator
 
