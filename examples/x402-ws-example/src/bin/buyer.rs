@@ -14,6 +14,9 @@ use x402_rs::types::PaymentRequirements;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Load .env.buyer (project root) and also example-local path, then fallback to .env
+    let _ = dotenvy::from_filename(".env.buyer");
+    let _ = dotenvy::from_filename("examples/x402-ws-example/.env.buyer");
     dotenv().ok();
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
@@ -29,7 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let init = json!({
         "id": Uuid::new_v4().to_string(),
         "method": "stream.init",
-        "params": { "resource": "wss://example/stream", "network": "base-sepolia" }
+        "params": { "resource": "wss://example/stream", "network": "polygon-amoy" }
     });
     ws.send(tokio_tungstenite::tungstenite::Message::Text(init.to_string())).await?;
 
