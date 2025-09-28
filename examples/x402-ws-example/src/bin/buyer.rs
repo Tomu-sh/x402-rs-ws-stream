@@ -25,8 +25,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (mut ws, _) = connect_async(seller_ws.as_str()).await?;
 
     let evm_pk: PrivateKeySigner = env::var("EVM_PRIVATE_KEY")?.parse()?;
+    let buyer_addr = evm_pk.address();
     let payments = X402Payments::with_wallet(EvmSenderWallet::new(evm_pk));
-    tracing::info!(buyer_address = %payments.signer_address(), "Buyer ready");
+    tracing::info!(buyer_address = %buyer_addr, "Buyer ready");
 
     // Send stream.init
     let init = json!({
