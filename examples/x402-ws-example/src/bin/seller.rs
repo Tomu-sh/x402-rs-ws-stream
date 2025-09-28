@@ -115,6 +115,7 @@ async fn ws_serve(mut socket: WebSocket, config: AppConfig) {
     while let Some(Ok(msg)) = socket.next().await {
         match msg {
             Message::Text(text) => {
+                tracing::debug!(raw = %text, "Buyer WS message");
                 if let Ok(req) = serde_json::from_str::<EnvelopeReq>(&text) {
                     match req.method.as_str() {
                         "stream.init" => {
@@ -133,6 +134,7 @@ async fn ws_serve(mut socket: WebSocket, config: AppConfig) {
                                 "id": req.id,
                                 "result": { "method": "stream.accept", "params": accept }
                             });
+                            tracing::info!(%stream_id, unit_seconds = config.unit_seconds, price = %config.price_usdc, asset = %usdc.address(), network = %config.network, "Accepted stream");
                             let _ = socket.send(Message::Text(response.to_string().into())).await;
 
                             // Immediately request first slice
@@ -142,6 +144,7 @@ async fn ws_serve(mut socket: WebSocket, config: AppConfig) {
                                 "method": "stream.require",
                                 "params": require,
                             });
+                            tracing::info!(slice_index, "Requesting first slice");
                             let _ = socket.send(Message::Text(env.to_string().into())).await;
                         }
                         "stream.pay" => {
@@ -152,6 +155,7 @@ async fn ws_serve(mut socket: WebSocket, config: AppConfig) {
                                 .and_then(|v| v.as_bool())
                                 .unwrap_or(false);
 
+                            tracing::info!(slice_index, verify_only, "Received stream.pay; forwarding to facilitator");
                             match facilitator_verify_and_maybe_settle(&config, &req.params, !verify_only).await {
                                 Ok((verify, settle)) => {
                                     // Extend prepaid window by one unit
@@ -167,6 +171,7 @@ async fn ws_serve(mut socket: WebSocket, config: AppConfig) {
                                         "id": req.id,
                                         "result": { "method": "stream.accept", "params": result }
                                     });
+                                    tracing::info!(prepaid_until_ms, "Accepted payment slice");
                                     let _ = socket.send(Message::Text(env.to_string().into())).await;
 
                                     // Issue next require a bit before end
@@ -180,6 +185,7 @@ async fn ws_serve(mut socket: WebSocket, config: AppConfig) {
                                         "method": "stream.require",
                                         "params": next_require,
                                     });
+                                    tracing::info!(slice_index, "Requesting next slice");
                                     let _ = socket.send(Message::Text(env2.to_string().into())).await;
                                 }
                                 Err(e) => {
@@ -187,6 +193,7 @@ async fn ws_serve(mut socket: WebSocket, config: AppConfig) {
                                         "id": req.id,
                                         "error": { "code": 1001, "message": format!("{}", e) }
                                     });
+                                    tracing::warn!(error = %e, "Facilitator verify/settle failed");
                                     let _ = socket.send(Message::Text(env.to_string().into())).await;
                                 }
                             }
