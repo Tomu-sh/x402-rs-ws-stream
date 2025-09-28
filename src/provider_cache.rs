@@ -27,6 +27,8 @@ use solana_sdk::signature::Keypair;
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::env;
+use url::Url;
+use alloy::transports::ws::WsConnect;
 
 use crate::chain::evm::EvmProvider;
 use crate::chain::solana::SolanaProvider;
@@ -134,11 +136,22 @@ impl ProviderCache {
                 match family {
                     NetworkFamily::Evm => {
                         let wallet = SignerType::from_env()?.make_evm_wallet()?;
-                        let provider = ProviderBuilder::new()
-                            .wallet(wallet)
-                            .connect(&rpc_url)
-                            .await
-                            .map_err(|e| format!("Failed to connect to {network}: {e}"))?;
+                        let provider = if rpc_url.starts_with("ws://") || rpc_url.starts_with("wss://") {
+                            let ws = WsConnect::new(rpc_url.clone());
+                            ProviderBuilder::new()
+                                .wallet(wallet)
+                                .on_ws(ws)
+                                .await
+                                .map_err(|e| format!("Failed to connect to {network} via WS: {e}"))?
+                        } else {
+                            let url = Url::parse(&rpc_url)
+                                .map_err(|e| format!("Invalid RPC URL for {network}: {e}"))?;
+                            ProviderBuilder::new()
+                                .wallet(wallet)
+                                .on_http(url)
+                                .await
+                                .map_err(|e| format!("Failed to connect to {network} via HTTP: {e}"))?
+                        };
                         let provider = EvmProvider::try_new(provider, is_eip1559, *network)?;
                         let provider = NetworkProvider::Evm(provider);
                         let signer_address = provider.signer_address();
