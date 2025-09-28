@@ -56,7 +56,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         let params = val.get("params").cloned().unwrap_or_default();
                         let stream_id = params.get("streamId").and_then(|v| v.as_str()).unwrap_or("");
                         let slice_index = params.get("sliceIndex").and_then(|v| v.as_u64()).unwrap_or(0);
-                        let requirements: PaymentRequirements = serde_json::from_value(params.get("requirements").cloned().unwrap())?;
+                        let requirements_json = params.get("requirements").cloned().unwrap();
+                        let requirements: PaymentRequirements = serde_json::from_value(requirements_json.clone())?;
 
                         // Build PaymentPayload using reqwest's signer logic
                         let payload = payments.make_payment_payload(requirements).await?;
@@ -68,6 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 "streamId": stream_id,
                                 "sliceIndex": slice_index,
                                 "paymentPayload": payload,
+                                "requirements": requirements_json,
                                 "verifyOnly": false,
                             }
                         });
