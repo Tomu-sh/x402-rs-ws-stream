@@ -14,8 +14,8 @@ use axum::response::Response;
 use axum::extract::WebSocketUpgrade;
 use axum::{Extension, Json, response::IntoResponse};
 use axum::extract::ws::{Message, WebSocket};
-use futures::StreamExt;
-use futures::SinkExt;
+use futures_util::StreamExt;
+use futures_util::SinkExt;
 use serde_json::json;
 use tracing::instrument;
 
@@ -170,7 +170,7 @@ async fn ws_serve(mut socket: WebSocket, facilitator: FacilitatorLocal) {
                 let response = handle_ws_text(&text, &facilitator).await;
                 if let Some(resp_text) = response {
                     // Best-effort send; if it fails, break the loop
-                    if socket.send(Message::Text(resp_text)).await.is_err() {
+                    if socket.send(Message::Text(resp_text.into())).await.is_err() {
                         break;
                     }
                 }
@@ -179,7 +179,7 @@ async fn ws_serve(mut socket: WebSocket, facilitator: FacilitatorLocal) {
                 let text = String::from_utf8_lossy(&bin);
                 let response = handle_ws_text(&text, &facilitator).await;
                 if let Some(resp_text) = response {
-                    if socket.send(Message::Text(resp_text)).await.is_err() {
+                    if socket.send(Message::Text(resp_text.into())).await.is_err() {
                         break;
                     }
                 }
