@@ -34,7 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "method": "stream.init",
         "params": { "resource": "wss://example/stream", "network": "polygon-amoy" }
     });
-    ws.send(tokio_tungstenite::tungstenite::Message::Text(init.to_string())).await?;
+    ws.send(tokio_tungstenite::tungstenite::Message::Text(init.to_string().into())).await?;
 
     while let Some(msg) = ws.next().await {
         let msg = msg?;
@@ -60,7 +60,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 "verifyOnly": false,
                             }
                         });
-                        ws.send(tokio_tungstenite::tungstenite::Message::Text(env.to_string())).await?;
+                        ws.send(tokio_tungstenite::tungstenite::Message::Text(env.to_string().into())).await?;
                     }
                     _ => {}
                 }
