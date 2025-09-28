@@ -8989,6 +8989,7 @@ dependencies = [
  "base64 0.22.1",
  "bincode",
  "dotenvy",
+ "futures-util",
  "once_cell",
  "opentelemetry",
  "opentelemetry-otlp",
