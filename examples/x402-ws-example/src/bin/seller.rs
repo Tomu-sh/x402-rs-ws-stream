@@ -28,6 +28,9 @@ struct AppConfig {
 
 #[tokio::main]
 async fn main() {
+    // Load .env.seller (project root) and also example-local path, then fallback to .env
+    let _ = dotenvy::from_filename(".env.seller");
+    let _ = dotenvy::from_filename("examples/x402-ws-example/.env.seller");
     dotenv().ok();
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
@@ -43,7 +46,7 @@ async fn main() {
     let network = env::var("STREAM_NETWORK")
         .ok()
         .and_then(|s| serde_json::from_str::<Network>(&format!("\"{}\"", s)).ok())
-        .unwrap_or(Network::BaseSepolia);
+        .unwrap_or(Network::PolygonAmoy);
 
     let unit_seconds: u64 = env::var("STREAM_UNIT_SECONDS")
         .ok()
