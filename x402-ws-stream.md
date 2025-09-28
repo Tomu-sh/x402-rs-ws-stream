@@ -17,7 +17,7 @@
 - Content stream: single WebSocket between Buyer and Seller.
 - Payment control channel: multiplexed on the same WS or a sibling WS.
 - Facilitator: WebSocket endpoint mirroring HTTP `verify`, `settle`, `supported`.
-- EVM RPC: WebSocket (wss://) endpoints for all chain calls.
+- EVM RPC: WebSocket (wss://) endpoints for all chain calls is recommended, fallback to HTTPS.
 
 ### Extension Overview
 This extension defines a prepay cadence for time-sliced access. Seller requests payment for a unit (e.g., 60 seconds of stream). Buyer responds with an x402 `PaymentPayload` for that exact unit. After successful verify (and optional settle), Seller streams until the slice ends, then prompts for the next slice. If the next prepayment does not arrive within a short TTL, the Seller pauses.
