@@ -27,7 +27,6 @@ use solana_sdk::signature::Keypair;
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::env;
-use url::Url;
 use alloy::transports::ws::WsConnect;
 
 use crate::chain::evm::EvmProvider;
@@ -140,7 +139,7 @@ impl ProviderCache {
                             let ws = WsConnect::new(rpc_url.clone());
                             ProviderBuilder::new()
                                 .wallet(wallet)
-                                .connect_ws(ws)
+                                .connect(ws)
                                 .await
                                 .map_err(|e| format!("Failed to connect to {network} via WS: {e}"))?
                         } else {
