@@ -121,7 +121,7 @@ async fn ws_serve(mut socket: WebSocket, config: AppConfig) {
                                 "id": req.id,
                                 "result": { "method": "stream.accept", "params": accept }
                             });
-                            let _ = socket.send(Message::Text(response.to_string())).await;
+                            let _ = socket.send(Message::Text(response.to_string().into())).await;
 
                             // Immediately request first slice
                             let require = build_requirements(&config, &stream_id, slice_index, usdc);
@@ -130,7 +130,7 @@ async fn ws_serve(mut socket: WebSocket, config: AppConfig) {
                                 "method": "stream.require",
                                 "params": require,
                             });
-                            let _ = socket.send(Message::Text(env.to_string())).await;
+                            let _ = socket.send(Message::Text(env.to_string().into())).await;
                         }
                         "stream.pay" => {
                             // Forward to facilitator WS for verify (+ optional settle)
@@ -155,7 +155,7 @@ async fn ws_serve(mut socket: WebSocket, config: AppConfig) {
                                         "id": req.id,
                                         "result": { "method": "stream.accept", "params": result }
                                     });
-                                    let _ = socket.send(Message::Text(env.to_string())).await;
+                                    let _ = socket.send(Message::Text(env.to_string().into())).await;
 
                                     // Issue next require a bit before end
                                     let next_require = build_requirements(&config,
@@ -168,14 +168,14 @@ async fn ws_serve(mut socket: WebSocket, config: AppConfig) {
                                         "method": "stream.require",
                                         "params": next_require,
                                     });
-                                    let _ = socket.send(Message::Text(env2.to_string())).await;
+                                    let _ = socket.send(Message::Text(env2.to_string().into())).await;
                                 }
                                 Err(e) => {
                                     let env = json!({
                                         "id": req.id,
                                         "error": { "code": 1001, "message": format!("{}", e) }
                                     });
-                                    let _ = socket.send(Message::Text(env.to_string())).await;
+                                    let _ = socket.send(Message::Text(env.to_string().into())).await;
                                 }
                             }
                         }
@@ -199,12 +199,19 @@ fn build_requirements(
     let requirements = PaymentRequirements {
         scheme: Scheme::Exact,
         network: config.network,
-        max_amount_required: usdc.amount(config.price_usdc.as_str()).expect("valid amount"),
+        max_amount_required: {
+            use std::str::FromStr;
+            use x402_rs::types::MoneyAmount;
+            MoneyAmount::from_str(config.price_usdc.as_str())
+                .and_then(|m| m.as_token_amount(usdc.decimals as u32))
+                .expect("valid amount")
+        },
         resource: Url::parse("wss://example/stream").unwrap(),
         description: format!("Slice {}", slice_index),
         mime_type: "application/octet-stream".into(),
         output_schema: None,
-        pay_to: config.pay_to.parse().expect("valid pay_to"),
+        pay_to: serde_json::from_str::<x402_rs::types::MixedAddress>(&format!("\"{}\"", config.pay_to))
+            .expect("valid pay_to"),
         max_timeout_seconds: config.unit_seconds + 30,
         asset: usdc.address(),
         extra: usdc.eip712.as_ref().map(|meta| json!({ "name": meta.name, "version": meta.version })),
@@ -244,7 +251,7 @@ async fn facilitator_verify_and_maybe_settle(
         "method": "x402.verify",
         "params": verify_req,
     });
-    ws.send(tokio_tungstenite::tungstenite::Message::Text(env.to_string())).await?;
+    ws.send(tokio_tungstenite::tungstenite::Message::Text(env.to_string().into())).await?;
     let verify = recv_result(&mut ws, &id_verify.to_string()).await?;
 
     let settle = if do_settle {
@@ -254,14 +261,17 @@ async fn facilitator_verify_and_maybe_settle(
             "method": "x402.settle",
             "params": verify_req,
         });
-        ws.send(tokio_tungstenite::tungstenite::Message::Text(env2.to_string())).await?;
+        ws.send(tokio_tungstenite::tungstenite::Message::Text(env2.to_string().into())).await?;
         Some(recv_result(&mut ws, &id_settle.to_string()).await?)
     } else { None };
 
     Ok((verify, settle))
 }
 
-async fn recv_result(ws: &mut tokio_tungstenite::WebSocketStream<tokio_tungstenite::ConnectorStream>, id: &str) -> anyhow::Result<serde_json::Value> {
+async fn recv_result<S>(ws: &mut tokio_tungstenite::WebSocketStream<S>, id: &str) -> anyhow::Result<serde_json::Value>
+where
+    S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
+{
     while let Some(msg) = ws.next().await {
         let msg = msg?;
         if let tokio_tungstenite::tungstenite::Message::Text(text) = msg {
