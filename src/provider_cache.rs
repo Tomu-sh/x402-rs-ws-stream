@@ -11,6 +11,7 @@
 //! - `SIGNER_TYPE` — currently only `"private-key"` is supported,
 //! - `PRIVATE_KEY` — the private key used to sign transactions as `"0x..."` string,
 //! - `RPC_URL_BASE`, `RPC_URL_BASE_SEPOLIA` — RPC endpoints per network
+//! - `RPC_WS_URL_POLYGON_AMOY` — WebSocket RPC endpoint for Polygon Amoy (preferred if set)
 //!
 //! Example usage:
 //! ```rust
@@ -43,6 +44,7 @@ const ENV_RPC_AVALANCHE: &str = "RPC_URL_AVALANCHE";
 const ENV_RPC_SOLANA: &str = "RPC_URL_SOLANA";
 const ENV_RPC_SOLANA_DEVNET: &str = "RPC_URL_SOLANA_DEVNET";
 const ENV_RPC_POLYGON_AMOY: &str = "RPC_URL_POLYGON_AMOY";
+const ENV_RPC_WS_POLYGON_AMOY: &str = "RPC_WS_URL_POLYGON_AMOY";
 const ENV_RPC_POLYGON: &str = "RPC_URL_POLYGON";
 const ENV_RPC_SEI: &str = "RPC_URL_SEI";
 const ENV_RPC_SEI_TESTNET: &str = "RPC_URL_SEI_TESTNET";
@@ -117,8 +119,17 @@ impl ProviderCache {
                 Network::SeiTestnet => true,
             };
 
-            let rpc_url = env::var(env_var);
-            if let Ok(rpc_url) = rpc_url {
+            // Prefer WebSocket transport for Polygon Amoy if `RPC_WS_URL_POLYGON_AMOY` is set (and non-empty).
+            // Fall back to HTTP `RPC_URL_POLYGON_AMOY` when WS is unset/empty.
+            let rpc_url: Option<String> = if let Network::PolygonAmoy = *network {
+                env::var(ENV_RPC_WS_POLYGON_AMOY)
+                    .ok()
+                    .filter(|s| !s.is_empty())
+                    .or_else(|| env::var(ENV_RPC_POLYGON_AMOY).ok())
+            } else {
+                env::var(env_var).ok()
+            };
+            if let Some(rpc_url) = rpc_url {
                 let family: NetworkFamily = (*network).into();
                 match family {
                     NetworkFamily::Evm => {
