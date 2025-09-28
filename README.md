@@ -238,6 +238,7 @@ Available variables:
 * `RPC_URL_SOLANA_DEVNET`: RPC endpoint for Solana devnet.
 * `RPC_URL_POLYGON`: RPC endpoint for Polygon mainnet.
 * `RPC_URL_POLYGON_AMOY`: RPC endpoint for Polygon Amoy testnet.
+* `RPC_WS_URL_POLYGON_AMOY`: WebSocket RPC endpoint for Polygon Amoy. If set (non-empty), the facilitator will prefer WebSocket transport for Polygon Amoy; otherwise it will fall back to `RPC_URL_POLYGON_AMOY` (HTTP).
 * `RPC_URL_SEI`: RPC endpoint for Sei mainnet.
 * `RPC_URL_SEI_TESTNET`: RPC endpoint for Sei testnet.
 
@@ -273,7 +274,7 @@ The Facilitator supports different networks based on the environment variables y
 | XDC Mainnet               | `RPC_URL_XDC`            | ✅                | Mainnet                          |
 | Avalanche Fuji Testnet    | `RPC_URL_AVALANCHE_FUJI` | ✅                | Testnet                          |
 | Avalanche C-Chain Mainnet | `RPC_URL_AVALANCHE`      | ✅                | Mainnet                          |
-| Polygon Amoy Testnet      | `RPC_URL_POLYGON_AMOY`   | ✅                | Testnet                          |
+| Polygon Amoy Testnet      | `RPC_URL_POLYGON_AMOY` or `RPC_WS_URL_POLYGON_AMOY` | ✅ | Testnet. WS is preferred if `RPC_WS_URL_POLYGON_AMOY` is set |
 | Polygon Mainnet           | `RPC_URL_POLYGON`        | ✅                | Mainnet                          |
 | Sei Testnet               | `RPC_URL_SEI_TESTNET`    | ✅                | Testnet                          |
 | Sei Mainnet               | `RPC_URL_SEI`            | ✅                | Mainnet                          |
