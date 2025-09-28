@@ -15,7 +15,6 @@ use axum::extract::WebSocketUpgrade;
 use axum::{Extension, Json, response::IntoResponse};
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::StreamExt;
-use futures_util::SinkExt;
 use serde_json::json;
 use tracing::instrument;
 
