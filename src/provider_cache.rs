@@ -27,7 +27,7 @@ use solana_sdk::signature::Keypair;
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::env;
-use alloy::transports::ws::WsConnect;
+// removed explicit WsConnect usage; generic `.connect(&str)` handles ws/http based on scheme
 
 use crate::chain::evm::EvmProvider;
 use crate::chain::solana::SolanaProvider;
@@ -136,10 +136,9 @@ impl ProviderCache {
                     NetworkFamily::Evm => {
                         let wallet = SignerType::from_env()?.make_evm_wallet()?;
                         let provider = if rpc_url.starts_with("ws://") || rpc_url.starts_with("wss://") {
-                            let ws = WsConnect::new(rpc_url.clone());
                             ProviderBuilder::new()
                                 .wallet(wallet)
-                                .connect(ws)
+                                .connect(&rpc_url)
                                 .await
                                 .map_err(|e| format!("Failed to connect to {network} via WS: {e}"))?
                         } else {
