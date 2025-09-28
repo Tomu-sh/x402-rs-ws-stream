@@ -152,16 +152,14 @@ stream.pay
       "scheme": "exact",
       "network": "base-sepolia",
       "payload": {
-        "evm": {
-          "signature": "0x...",
-          "authorization": {
-            "from": "0xPAYER...",
-            "to": "0xPAYEE...",
-            "value": "50000",
-            "validAfter": 1729999500,
-            "validBefore": 1730000200,
-            "nonce": "0x...32bytes..."
-          }
+        "signature": "0x...",
+        "authorization": {
+          "from": "0xPAYER...",
+          "to": "0xPAYEE...",
+          "value": "50000",
+          "validAfter": 1729999500,
+          "validBefore": 1730000200,
+          "nonce": "0x...32bytes..."
         }
       }
     }
@@ -178,7 +176,7 @@ stream.accept (on-chain per slice)
     "settle": {
       "success": true,
       "payer": "0xPAYER...",
-      "transaction": { "evm": "0xTXHASH..." },
+      "transaction": "0xTXHASH...",
       "network": "base-sepolia"
     },
     "prepaidUntilMs": 1730000130000
