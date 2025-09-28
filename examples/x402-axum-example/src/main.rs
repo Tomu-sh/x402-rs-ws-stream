@@ -11,7 +11,7 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 use x402_axum::{IntoPriceTag, X402Middleware};
 use x402_rs::network::{Network, USDCDeployment};
 use x402_rs::telemetry::Telemetry;
-use x402_rs::{address_evm, address_sol};
+use x402_rs::types::EvmAddress;
 
 #[tokio::main]
 async fn main() {
@@ -24,14 +24,40 @@ async fn main() {
 
     let facilitator_url =
         env::var("FACILITATOR_URL").unwrap_or_else(|_| "https://facilitator.x402.rs".to_string());
+    let base_url =
+        env::var("BASE_URL").unwrap_or_else(|_| "https://localhost:3000/".to_string());
 
     let x402 = X402Middleware::try_from(facilitator_url)
         .unwrap()
-        .with_base_url(url::Url::parse("https://localhost:3000/").unwrap());
-    let usdc_base_sepolia = USDCDeployment::by_network(Network::BaseSepolia)
-        .pay_to(address_evm!("0xBAc675C310721717Cd4A37F6cbeA1F081b1C2a07"));
-    let usdc_solana = USDCDeployment::by_network(Network::Solana)
-        .pay_to(address_sol!("EGBQqKn968sVv5cQh5Cr72pSTHfxsuzq7o7asqYB5uEV"));
+        .with_base_url(url::Url::parse(&base_url).unwrap());
+
+    // Read EVM recipient addresses from environment
+    let pay_to_base_sepolia: EvmAddress = env::var("PAY_TO_EVM_BASE_SEPOLIA")
+        .unwrap_or_else(|_| "0xBAc675C310721717Cd4A37F6cbeA1F081b1C2a07".to_string())
+        .parse()
+        .expect("Invalid EVM address for PAY_TO_EVM_BASE_SEPOLIA");
+    let pay_to_polygon_amoy: EvmAddress = env::var("PAY_TO_EVM_POLYGON_AMOY")
+        .unwrap_or_else(|_| "0xBAc675C310721717Cd4A37F6cbeA1F081b1C2a07".to_string())
+        .parse()
+        .expect("Invalid EVM address for PAY_TO_EVM_POLYGON_AMOY");
+
+    // Read human-readable USDC amounts (e.g., "0.0025")
+    let amount_base_sepolia =
+        env::var("PRICE_USDC_BASE_SEPOLIA").unwrap_or_else(|_| "0.0025".to_string());
+    let amount_polygon_amoy =
+        env::var("PRICE_USDC_POLYGON_AMOY").unwrap_or_else(|_| "0.0025".to_string());
+
+    // Build price tags for Base Sepolia and Polygon Amoy
+    let price_base_sepolia = USDCDeployment::by_network(Network::BaseSepolia)
+        .pay_to(pay_to_base_sepolia)
+        .amount(amount_base_sepolia.as_str())
+        .build()
+        .unwrap();
+    let price_polygon_amoy = USDCDeployment::by_network(Network::PolygonAmoy)
+        .pay_to(pay_to_polygon_amoy)
+        .amount(amount_polygon_amoy.as_str())
+        .build()
+        .unwrap();
 
     let app = Router::new()
         .route(
@@ -39,8 +65,8 @@ async fn main() {
             get(my_handler).layer(
                 x402.with_description("Premium API")
                     .with_mime_type("application/json")
-                    .with_price_tag(usdc_solana.amount(0.0025).unwrap())
-                    .or_price_tag(usdc_base_sepolia.amount(0.0025).unwrap()),
+                    .with_price_tag(price_base_sepolia)
+                    .or_price_tag(price_polygon_amoy),
             ),
         )
         .layer(
