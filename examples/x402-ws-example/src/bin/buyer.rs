@@ -22,7 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_env_filter(EnvFilter::from_default_env())
         .init();
 
-    let seller_ws = env::var("SELLER_WS_URL").unwrap_or_else(|_| "ws://localhost:4000/ws".into());
+    let seller_ws = env::var("SELLER_WS_URL").unwrap_or_else(|_| "ws://localhost:8081/ws".into());
     let (mut ws, _) = connect_async(seller_ws.as_str()).await?;
 
     let evm_pk: PrivateKeySigner = env::var("EVM_PRIVATE_KEY")?.parse()?;
