@@ -1,7 +1,7 @@
 ## x402-ws-stream: WebSocket Streaming Payments Extension (EVM-only)
 
 ### Status
-- Draft, hackathon-ready profile; safe-enough defaults; EVM chains only; Solana out of scope.
+- Draft; EVM chains only.
 
 ### Motivation
 - Micropay real-time streams (video, API, data) with low latency and predictable UX.
