@@ -3,7 +3,7 @@ version: "3.9"
 services:
   facilitator:
     container_name: x402-facilitator
-    image: ukstv/x402-facilitator:latest
+    #image: ukstv/x402-facilitator:latest
     build:
       context: .
       dockerfile: Dockerfile
