@@ -1,0 +1,34 @@
+[package]
+name = "x402-ws-example"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+tokio = { version = "1.45.0", features = ["full"] }
+axum = { version = "0.8.4", features = ["ws"] }
+futures-util = "0.3.31"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
+dotenvy = "0.15.7"
+url = { version = "2.5.4", features = ["serde"] }
+anyhow = "1.0.98"
+uuid = { version = "1.11.0", features = ["v4", "fast-rng", "serde"] }
+tokio-tungstenite = { version = "0.26.2", features = ["native-tls"] }
+tungstenite = { version = "0.26.2" }
+rand = "0.8.5"
+
+x402-rs = { path = "../../" }
+x402-reqwest = { path = "../../crates/x402-reqwest" }
+
+[bin]
+name = "ws-seller"
+path = "src/bin/seller.rs"
+
+[[bin]]
+name = "ws-buyer"
+path = "src/bin/buyer.rs"
+
+
