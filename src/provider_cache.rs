@@ -140,15 +140,13 @@ impl ProviderCache {
                             let ws = WsConnect::new(rpc_url.clone());
                             ProviderBuilder::new()
                                 .wallet(wallet)
-                                .on_ws(ws)
+                                .connect_ws(ws)
                                 .await
                                 .map_err(|e| format!("Failed to connect to {network} via WS: {e}"))?
                         } else {
-                            let url = Url::parse(&rpc_url)
-                                .map_err(|e| format!("Invalid RPC URL for {network}: {e}"))?;
                             ProviderBuilder::new()
                                 .wallet(wallet)
-                                .on_http(url)
+                                .connect(&rpc_url)
                                 .await
                                 .map_err(|e| format!("Failed to connect to {network} via HTTP: {e}"))?
                         };
